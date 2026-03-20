@@ -1,0 +1,3 @@
+_target_: models.backbones.ViT
+in_channels: ${dataset.nbands}
+imsize: ${dataset.imsize}

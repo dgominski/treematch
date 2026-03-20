@@ -1,0 +1,19 @@
+pred_device: "cuda:1"
+interp_device: "cuda:0"
+
+imsize: 32
+batch_size: 256
+num_workers: 4
+output_dir: "./predictions"
+ckpt_path: "/scratch/checkpoints/counting/unetr50_all/20251201-1416/model.pth"
+
+ps_dir: "/bigdata/users/Maurice/Study_3/Data/Training_data/Images/Training_images/Planet_3m_2019/"
+s2_dir: "/bigdata/users/Maurice/Study_3/Data/Training_data/Images/Training_images/S2_10m_2019/"
+s1_dir: "/bigdata/users/Maurice/Study_3/Data/Training_data/Images/Training_images/S1_10m_2019/"
+ps_gpkg: "to_predict_ps.gpkg"
+s2_gpkg: "to_predict_s2.gpkg"
+s1_gpkg: "to_predict_s1.gpkg"
+
+#multithreaded options
+num_writers: 2
+num_readers: 3

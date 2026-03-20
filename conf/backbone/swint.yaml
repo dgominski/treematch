@@ -1,0 +1,3 @@
+_target_: models.backbones.SwinT
+in_channels: ${dataset.nbands}
+imsize: ${dataset.imsize}

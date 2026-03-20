@@ -1,0 +1,6 @@
+_target_: models.count_regressor.Trainer
+name: count_regressor
+lr: 5e-5
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}

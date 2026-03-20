@@ -1,0 +1,4 @@
+_target_: data.ps.PSUnlabeledDataset
+imsize: ${train.imsize}
+preload: False
+nbands: 20

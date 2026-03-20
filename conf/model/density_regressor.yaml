@@ -1,0 +1,7 @@
+_target_: models.density_regressor.Trainer
+name: density_regressor
+lr: 5e-5
+sigma: 4
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}

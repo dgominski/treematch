@@ -1,0 +1,26 @@
+defaults:
+  - model: udm
+  - backbone: resnet50
+  - dataset: spot
+  - dataset_noisy: ${dataset}_noisy
+
+device: "cuda:1"
+ckpt: "/scratch/checkpoints/treedensity/20260301-0747/best_model.pth"
+target_dir: "/home/dgominski/Documents/publis/tree_density/viz/target/"
+output_dir: "/home/dgominski/Documents/publis/tree_density/viz/output2/"
+imsize: 1024
+batch_size: 4
+num_threads: 2
+margin: 8
+scaling: "gf"
+
+
+train:
+  device: "cuda:1"
+  batch_size: 64
+  clean_ratio: 0.9
+  nepoch: 500
+  num_workers: 8
+  logdir: "/scratch/checkpoints/treedensity/"
+  imsize: 64
+  val_freq: 10

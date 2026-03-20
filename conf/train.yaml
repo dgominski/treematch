@@ -1,0 +1,15 @@
+defaults:
+  - model: udm
+  - backbone: resnet50
+  - dataset: ps
+  - dataset_noisy: ${dataset}_noisy
+
+train:
+  device: "cuda:0"
+  batch_size: 64
+  clean_ratio: 0.8
+  nepoch: 500
+  num_workers: 8
+  logdir: "/scratch/checkpoints/treedensity/"
+  imsize: 64
+  val_freq: 10

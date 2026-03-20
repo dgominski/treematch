@@ -1,0 +1,18 @@
+_target_: models.udm.Trainer
+name: udm
+lr: 8e-5
+wc: 1  # weight for counting loss
+wot: 1  # weight for OT loss
+reg: 0.005  # entropic regularization term in OT (cost of moving mass)
+reg_m: 0.2  # KL marginal regularization term in OT (cost of creating mass)
+alpha: 0.8  # maximum variation from residuals
+num_of_iter_in_ot: 100
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}
+imsize: ${train.imsize}
+clean_ratio: ${train.clean_ratio}
+convert_density: False # whether to convert noisy supervision to a density proxy with epanechnikov kernels
+slack: True # whether to use slack for down weighting unreliable labels
+note: "geomloss+residual_on_noisy+invertcoords"
+downscale_ratio: 1

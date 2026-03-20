@@ -1,0 +1,8 @@
+_target_: models.centernet.Trainer
+name: centernet
+lr: 1e-5
+sigma: 2
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}
+imsize: ${train.imsize}

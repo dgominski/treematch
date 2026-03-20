@@ -1,0 +1,4 @@
+_target_: data.gf.GFCountingDataset
+imsize: ${train.imsize}
+preload: True
+nbands: 4

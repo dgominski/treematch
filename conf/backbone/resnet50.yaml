@@ -1,0 +1,2 @@
+_target_: models.backbones.UNetR50
+in_channels: ${dataset.nbands}

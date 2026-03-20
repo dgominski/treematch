@@ -1,0 +1,7 @@
+_target_: models.p2p.Trainer
+name: p2p
+lr: 1e-4
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}
+imsize: ${train.imsize}

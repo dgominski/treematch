@@ -1,0 +1,11 @@
+_target_: models.dm_count.Trainer
+name: dm_count
+lr: 5e-5
+wot:  1 # weight for OT loss
+wtv: 1  # weight for TV loss
+reg: 10.0  # entropic regularization term in OT
+num_of_iter_in_ot: 100
+device: ${train.device}
+max_epoch: ${train.nepoch}
+val_epoch: ${train.val_freq}
+imsize: ${train.imsize}

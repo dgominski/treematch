@@ -294,7 +294,7 @@ class uOT_Loss(nn.Module):
             norm_beta = beta
             F, G = self.uot_potentials(norm_alpha, x, norm_beta, y)
             log_pi = (
-                    (F[0].unsqueeze(1) + G[0].unsqueeze(0) - C) / self.reg
+                    (F.squeeze().unsqueeze(1) + G.squeeze().unsqueeze(0) - C) / self.reg
                     + torch.log(norm_alpha).unsqueeze(1)
                     + torch.log(norm_beta).unsqueeze(0)
             )

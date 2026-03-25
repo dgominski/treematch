@@ -2,3 +2,4 @@ _target_: data.ps.PSCountingDataset
 imsize: ${train.imsize}
 preload: True
 nbands: 4
+root: /path/to/ps

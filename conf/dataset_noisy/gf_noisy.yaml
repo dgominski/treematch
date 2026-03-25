@@ -2,3 +2,4 @@ _target_: data.gf.GFPseudoLabelDataset
 imsize: ${train.imsize}
 preload: False
 nbands: 4
+root: /path/to/gfnoisy

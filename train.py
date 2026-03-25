@@ -1,24 +1,14 @@
 import random
-
-import torch
-from data.ps import PSCountingDataset
-from data.gf import GFCountingDataset
-# from models.dm_count_unbalanced import Trainer
-from models.dm_count import Trainer
 from models.backbones import *
 import hydra
 from omegaconf import OmegaConf
-from tensorboardX import SummaryWriter
 import os
 import datetime
 import wandb
-import tqdm
 from sklearn.metrics import r2_score
 import numpy as np
-from eval import game_batched
 from torch.utils.data import DataLoader, random_split
 from itertools import cycle
-import matplotlib.pyplot as plt
 
 
 torch.backends.cudnn.benchmark = False
@@ -29,59 +19,51 @@ torch.cuda.manual_seed_all(0)
 np.random.seed(0)
 torch.multiprocessing.set_sharing_strategy('file_system')
 
+
 def get_preds(loader, trainer, device):
     device = torch.device(device)
     trainer.backbone.eval()
     preds = []
+    valids = []
     targets = []
     with torch.no_grad():
-        for inp, tgt in loader:
+        for inp, valid, tgt in loader:
             output = trainer.predict(inp.to(device))
-
-            # # display
-            # fig, axs = plt.subplots(1, 3)
-            # mean = [73.2, 80.2, 72.7]
-            # std = [39.1, 39.1, 41.4]
-            # unnormed = inp[0, :3].cpu().numpy() * np.array(std).reshape(-1, 1, 1) + np.array(mean).reshape(-1, 1, 1)
-            # unnormed = np.clip(unnormed, 0, 255).astype(np.uint8).transpose(1, 2, 0)
-            # axs[0].imshow(unnormed)
-            # axs[1].imshow(tgt[0, 0].cpu().numpy(), cmap='hot')
-            # axs[2].imshow(output[0, 0].cpu().numpy(), cmap='hot')
-            # print(tgt[0, 0].sum().item(), output[0, 0].sum().item())
-            # plt.show()
-
             preds.extend(output.cpu())
+            valids.append(valid.cpu())
             targets.extend(tgt.cpu())
-    return torch.cat(preds), torch.cat(targets)
+    return torch.cat(preds), torch.cat(targets), torch.cat(valids)
 
 
-def evaluate(preds, gts):
-    # patch-level
+def evaluate(preds, gts, gsd_m, masks):
+    # Apply validity mask — zero out ignored pixels before any metric computation
+    masks = masks.float()
+    preds = preds * masks
+    gts = gts * masks
+
+    # Count only labeled pixels per sample for normalisation
+    pixel_counts = masks.view(masks.shape[0], -1).sum(dim=1).clamp(min=1)
+
+    # patch-level counts (sum over labeled pixels only)
     pred_counts = preds.view(preds.shape[0], -1).sum(dim=1)
     tgt_counts = gts.view(gts.shape[0], -1).sum(dim=1)
+
     r2 = r2_score(tgt_counts.numpy(), pred_counts.numpy())
     mae = torch.abs(tgt_counts - pred_counts).mean().item()
-    rmse = torch.sqrt(((tgt_counts - pred_counts) ** 2).mean()).item()
     nmae = mae / (tgt_counts.mean().item() + 1e-8)
-    # pixel-level
-    # p_mae = torch.abs(gts - preds).mean().item()
-    # p_rmse = torch.sqrt(((gts - preds) ** 2).mean()).item()
-    # patch-level
-    # game_1 = game_batched(preds.unsqueeze(1), gts.unsqueeze(1), L=1).item()
-    # game_2 = game_batched(preds.unsqueeze(1), gts.unsqueeze(1), L=2).item()
-    # game_3 = game_batched(preds.unsqueeze(1), gts.unsqueeze(1), L=3).item()
-    # game_4 = game_batched(preds.unsqueeze(1), gts.unsqueeze(1), L=4).item()
+
+    # RMSE in objects/ha: scale counts by (10_000 / patch_area_m2)
+    patch_area_m2 = pixel_counts * (gsd_m ** 2)          # m² of labeled pixels per sample
+    counts_to_ha = 10_000 / patch_area_m2                 # scalar to convert raw count → objects/ha
+    pred_ha = pred_counts * counts_to_ha
+    tgt_ha  = tgt_counts  * counts_to_ha
+    rmse = torch.sqrt(((tgt_ha - pred_ha) ** 2).mean()).item()
+
     metrics = {
         "r2": r2,
         "mae": mae,
         "nmae": nmae,
         "rmse": rmse,
-        # "p_mae": p_mae,
-        # "p_rmse": p_rmse,
-        # "game_1": game_1,
-        # "game_2": game_2,
-        # "game_3": game_3,
-        # "game_4": game_4,
     }
     return metrics
 
@@ -131,7 +113,6 @@ def train(cfg):
         f.write(OmegaConf.to_yaml(cfg))
 
     best_nmae = 1e8
-    best_metrics = {}
     log_metrics = ["nmae", "rmse"]
     for epoch in range(cfg.train.nepoch):
         trainer.train()  # Set model to training mode

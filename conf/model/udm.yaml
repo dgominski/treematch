@@ -14,5 +14,4 @@ imsize: ${train.imsize}
 clean_ratio: ${train.clean_ratio}
 convert_density: False # whether to convert noisy supervision to a density proxy with epanechnikov kernels
 slack: True # whether to use slack for down weighting unreliable labels
-note: "geomloss+residual_on_noisy+invertcoords"
 downscale_ratio: 1

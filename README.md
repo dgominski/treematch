@@ -131,17 +131,12 @@ We trained a PlanetScope+Sentinel-1+Sentinel-2 (20-band composite) model to coun
 ## Reference
 
 ```bibtex
-@article{tinytree2025,
-  title={TinyTree: A Multi-Sensor Benchmark for Tree Counting from Satellite Imagery},
-  author={TBA},
-  year={2025}
+@inproceedings{gominski2026counting,
+  title     = {Counting Trees from Satellite Imagery with Noisy Supervision},
+  author    = {Gominski, Dimitri and Mugabowindekwe, Maurice and Xu, Qiue and Tong, Xiaowei and Brandt, Martin and Le, Hieu and Fensholt, Rasmus and Samaras, Dimitris and Landrieu, Loic},
+  booktitle = {European Conference on Computer Vision},
+  year      = {2026}
 }
 ```
 
-```bibtex
-@article{treematch2025,
-  title={TreeMatch: Density Estimation with Optimal Transport for Tree Counting},
-  author={TBA},
-  year={2025}
-}
-```
+, 

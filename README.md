@@ -10,6 +10,10 @@ This repository contains the code and data for:
 - **TinyTrees** — a multi-sensor tree counting benchmark with point-level annotations across three geographic regions and satellite sensors.
 - **TreeMatch** — a training method for tree density estimation that leverages optimal transport to learn from both strong and weak annotations.
 
+<p align="center">
+  <img src="data/treematch.png" alt="TreeMatch" width="600">
+</p>
+
 ## TinyTrees Dataset
 
 TinyTrees provides georeferenced satellite imagery with per-tree point annotations across three regions, sensors, and resolutions:

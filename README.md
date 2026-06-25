@@ -1,11 +1,17 @@
+<div align="center">
+
 # Tree counting with satellite imagery
 
-[![python](https://img.shields.io/badge/-Python_3.11+-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![pytorch](https://img.shields.io/badge/PyTorch_2.0+-ee4c2c?logo=pytorch&logoColor=white)](https://pytorch.org/get-started/locally/)
-[![hydra](https://img.shields.io/badge/Config-Hydra_1.3-89b8cd)](https://hydra.cc/)
-[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](#license)
 
-This repository contains the code and data for:
+[//]: # ([![python]&#40;https://img.shields.io/badge/-Python_3.11+-blue?logo=python&logoColor=white&#41;]&#40;https://www.python.org/&#41;)
+[//]: # ([![pytorch]&#40;https://img.shields.io/badge/PyTorch_2.0+-ee4c2c?logo=pytorch&logoColor=white&#41;]&#40;https://pytorch.org/get-started/locally/&#41;)
+[//]: # ([![hydra]&#40;https://img.shields.io/badge/Config-Hydra_1.3-89b8cd&#41;]&#40;https://hydra.cc/&#41;)
+[//]: # ([![license]&#40;https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray&#41;]&#40;#license&#41;)
+[![arXiv paper](https://img.shields.io/badge/paper-arxiv-b31b1b.svg?style=for-the-badge)](https://arxiv.org/abs/2606.24786)
+[![Dataset](https://img.shields.io/badge/Dataset-Download-blue.svg?style=for-the-badge)](https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL)
+</div>
+
+This repository contains the code and data for the upcoming ECCV26 paper, [**Counting Trees from Satellite Imagery with Noisy Supervision**](https://arxiv.org/abs/2606.24786).
 
 - **TinyTrees** — a multi-sensor tree counting benchmark with point-level annotations across three geographic regions and satellite sensors.
 - **TreeMatch** — a training method for tree density estimation that leverages optimal transport to learn from both strong and weak annotations.
@@ -22,11 +28,11 @@ TinyTrees provides georeferenced satellite imagery with per-tree point annotatio
 |--------|--------|-----|----------------|--------------|------|-------------|------------|
 | Rwanda | PlanetScope | 3.0 m | 231 tiles / 309k trees | 73 tiles / 3.4M trees | 734 tiles / 237k trees | 3.9M | 283 km² |
 | China | Gaofen-2 | 0.8 m | 446 tiles / 55k trees | 16,364 tiles / 7.7M trees | 2,565 tiles / 70k trees | 7.8M | 2,344 km² |
-| France | SPOT-6 | 1.5 m | 492 tiles / 11k trees | CHM-derived (via [Open-Canopy](https://huggingface.co/datasets/IGNF/open-canopy)) | 493 tiles / 11k trees | 22k | 0.7 km² |
+| France | SPOT-6 | 1.5 m | 492 tiles / 11k trees | CHM-derived (via [Open-Canopy](https://github.com/fajwel/open-canopy)) | 493 tiles / 11k trees | 22k | 0.7 km² |
 
 Each tile is a 5-band GeoTIFF (4 spectral bands + 1 binary validity mask). Point annotations are stored in a single GeoPackage per split with a `tile` column linking each point to its image.
 
-**SPOT weak labels** are CHM-derived pseudolabels bundled in `spot/train_weak/`. The corresponding SPOT-6 imagery is not redistributed and must be obtained from the [Open-Canopy](https://huggingface.co/datasets/IGNF/open-canopy) dataset (see `conf/local/local.yaml` for path configuration).
+**SPOT weak labels** are CHM-derived pseudolabels bundled in `spot/train_weak/`. The corresponding SPOT-6 imagery is not redistributed and must be obtained from the [Open-Canopy](https://github.com/fajwel/open-canopy) dataset (see `conf/local/local.yaml` for path configuration).
 
 ### Download
 
@@ -53,7 +59,7 @@ tinytrees/
 ```python
 from data.ps import PlanetScopeStrong
 from data.gf import GaofenStrong
-from data.spot import SPOTCountingDataset
+from data.spot import SPOTStrong
 
 # Each dataset returns (image, valid_mask, count_map)
 # image: (C+1, H, W) float tensor — C normalized bands + 1 validity channel
@@ -62,7 +68,7 @@ from data.spot import SPOTCountingDataset
 
 ds = PlanetScopeStrong(imsize=64, split="train_strong", root="/path/to/tinytrees/ps")
 ds = GaofenStrong(imsize=64, split="train_strong", root="/path/to/tinytrees/gf")
-ds = SPOTCountingDataset(imsize=64, split="train_strong", root="/path/to/tinytrees/spot")
+ds = SPOTStrong(imsize=64, split="train_strong", root="/path/to/tinytrees/spot")
 ```
 
 ## TreeMatch

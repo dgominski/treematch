@@ -1,3 +1,0 @@
-_target_: data.spot.SPOTUnlabeledDataset
-imsize: ${train.imsize}
-preload: False

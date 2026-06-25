@@ -19,7 +19,7 @@ M_EPS = 1e-16
 
 
 class Trainer(object):
-    def __init__(self, imsize, downscale_ratio, device, wc, wot, reg, reg_m, alpha, num_of_iter_in_ot, lr, clean_ratio, slack, convert_density, max_epoch, **kwargs):
+    def __init__(self, imsize, downscale_ratio, device, wc, wot, reg, reg_m, alpha, num_of_iter_in_ot, lr, strong_ratio, slack, convert_density, max_epoch, **kwargs):
         self.device = device
         self.downscale_ratio = downscale_ratio
         self.wc = wc
@@ -30,7 +30,7 @@ class Trainer(object):
         self.imsize = imsize
         self.num_of_iter_in_ot = num_of_iter_in_ot
         self.lr = lr
-        self.clean_ratio = clean_ratio
+        self.strong_ratio = strong_ratio
         self.max_epoch = max_epoch
         self.slack = slack
         self.convert_density = convert_density
@@ -81,43 +81,38 @@ class Trainer(object):
         # densities = torch.cat(densities, dim=0).to(self.device)
         N = inputs.size(0)
 
-        clean_batch_size = int(N * self.clean_ratio)
+        strong_batch_size = int(N * self.strong_ratio)
 
         with torch.set_grad_enabled(True):
             outputs = nn.functional.relu(self.backbone(inputs))
             outputs = outputs * valid  # mask invalid regions
 
-            if clean_batch_size < N:
-                # compute OT loss on clean samples
-                outputs_clean = outputs[:clean_batch_size]
-                points_clean = points[:clean_batch_size]
-                gt_discrete_clean = gt_discrete[:clean_batch_size]
+            if strong_batch_size < N:
+                # compute OT loss on strong samples
+                outputs_strong = outputs[:strong_batch_size]
+                points_strong = points[:strong_batch_size]
+                gt_discrete_strong = gt_discrete[:strong_batch_size]
             else:
-                outputs_clean = outputs
-                points_clean = points
-                gt_discrete_clean = gt_discrete
+                outputs_strong = outputs
+                points_strong = points
+                gt_discrete_strong = gt_discrete
 
-            # Compute uOT loss on clean samples.
-            ot_loss = self.uot_loss.forward(outputs_clean, points_clean, slack=False)
-            # Compute counting loss on clean samples
-            pred_counts = outputs_clean.view(outputs_clean.size(0), -1).sum(-1)
-            gt_counts = gt_discrete_clean.view(gt_discrete_clean.size(0), -1).sum(-1).float()
+            # Compute uOT loss on strong samples.
+            ot_loss = self.uot_loss.forward(outputs_strong, points_strong, slack=False)
+            # Compute counting loss on strong samples
+            pred_counts = outputs_strong.view(outputs_strong.size(0), -1).sum(-1)
+            gt_counts = gt_discrete_strong.view(gt_discrete_strong.size(0), -1).sum(-1).float()
             count_loss = self.mae(pred_counts, gt_counts) * self.wc
 
-            # if noisy samples, compute UOT loss
-            if clean_batch_size < N:
-                outputs_noisy = outputs[clean_batch_size:]
-                points_noisy = points[clean_batch_size:]
-                density_noisy = gt_discrete[clean_batch_size:]
-
-                # uot_loss = self.uot_loss.forward(outputs_noisy, points_noisy, slack=True)
-                # plt.imshow(density_noisy[0, 0].cpu().numpy())
-                # plt.scatter(x=points_noisy[0][:, 1].cpu().numpy(), y=points_noisy[0][:, 0].cpu().numpy())
-                # plt.show()
+            # if weak samples, compute UOT loss
+            if strong_batch_size < N:
+                outputs_weak = outputs[strong_batch_size:]
+                points_weak = points[strong_batch_size:]
+                density_weak = gt_discrete[strong_batch_size:]
                 if self.convert_density:
-                    uot_loss = self.uot_loss.forward_density(outputs_noisy, density_noisy, slack=self.slack)
+                    uot_loss = self.uot_loss.forward_density(outputs_weak, density_weak, slack=self.slack)
                 else:
-                    uot_loss = self.uot_loss.forward(outputs_noisy, points_noisy, slack=self.slack)
+                    uot_loss = self.uot_loss.forward(outputs_weak, points_weak, slack=self.slack)
                 ot_loss = ot_loss + uot_loss
             ot_loss = ot_loss * self.wot
 
@@ -484,7 +479,7 @@ if __name__ == "__main__":
         dataset = GFPseudoLabelDataset(imsize=s)
         loader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=4, pin_memory=True)
         trainer = Trainer(s, downscale_ratio=1, device=device, wc=1, wot=1, reg=0.005, reg_m=0.2,
-                          num_of_iter_in_ot=100, lr=1e-5, clean_ratio=1, slack=True, convert_density=False,
+                          num_of_iter_in_ot=100, lr=1e-5, strong_ratio=1, slack=True, convert_density=False,
                           max_epoch=100, alpha=0.8)
         trainer.setup(backbone)
         print(profile_training_step(trainer, loader, batch_size))

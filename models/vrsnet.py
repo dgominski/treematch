@@ -204,7 +204,7 @@ class Trainer(object):
 
             # counts from density: divide out the 100× scale
             pred_count = (outputs.detach() * valid).view(outputs.shape[0], -1).sum(1) / 100
-            gt_count = gt_discrete.float().view(gt_discrete.shape[0], -1).sum(1)
+            gt_count = gt_discrete.float().to(self.device).view(gt_discrete.shape[0], -1).sum(1)
             mae = torch.abs(pred_count - gt_count).mean()
 
             logger.log({

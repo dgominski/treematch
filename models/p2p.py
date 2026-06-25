@@ -37,7 +37,7 @@ class Trainer(object):
 
         self.start_epoch = 0
 
-    def train_step(self, inputs, gt_discrete, logger):
+    def train_step(self, inputs, valid, gt_discrete, logger):
         inputs = inputs.to(self.device)
         valid = inputs[:, [-1,]].to(self.device)
 

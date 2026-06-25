@@ -23,7 +23,7 @@ std = [39.1, 39.1, 41.4, 53.5]
 
 class GaofenStrong(torch.utils.data.Dataset):
     def __init__(self, imsize, split, root, preload=True, **kwargs):
-        assert split in ["train", "test"], "Invalid split"
+        assert split in ["train_strong", "test"], "Invalid split"
         self.split = split
         self.imsize = imsize
         self.split_dir = os.path.join(root, split)
@@ -41,7 +41,7 @@ class GaofenStrong(torch.utils.data.Dataset):
         ])
         self.crop = A.Compose([
             A.PadIfNeeded(min_height=imsize, min_width=imsize, border_mode=0, fill=0),
-            A.RandomCrop(height=imsize, width=imsize) if split == "train" else A.CenterCrop(height=imsize, width=imsize)
+            A.RandomCrop(height=imsize, width=imsize) if split == "train_strong" else A.CenterCrop(height=imsize, width=imsize)
         ],
             keypoint_params=A.KeypointParams(format='yx', remove_invisible=True),
             seed=42
@@ -97,81 +97,79 @@ class GaofenStrong(torch.utils.data.Dataset):
 
 
 class GaofenWeak(torch.utils.data.Dataset):
-    def __init__(self, imsize, root, **kwargs):
-        self.root = root
-        self.random_crop = A.Compose([
+    def __init__(self, imsize, root, preload=False, **kwargs):
+        self.imsize = imsize
+
+        self.tifs = sorted(glob.glob(os.path.join(root, "*.tif")))
+        points_gdf = gpd.read_file(os.path.join(root, "points.gpkg"), engine="pyogrio")
+        self.points_by_tile = {name: g for name, g in points_gdf.groupby("tile")}
+
+        self.preloaded = False
+        if preload:
+            self.preload()
+
+        self.transform = T.Compose([
+            T.Normalize(mean=mean, std=std)
+        ])
+        self.crop = A.Compose([
             A.PadIfNeeded(min_height=imsize, min_width=imsize, border_mode=0, fill=0),
             A.RandomCrop(height=imsize, width=imsize)
         ],
-            additional_targets={'chm': 'mask'},
-            keypoint_params=A.KeypointParams(format='yx', remove_invisible=True))
-        self.normalize = T.Compose([
-            T.Normalize(mean=mean, std=std)
-        ])
+            keypoint_params=A.KeypointParams(format='yx', remove_invisible=True),
+            seed=42
+        )
         self.nbands = 4
-        self.imsize = imsize
 
-        self.im_fps = glob.glob(os.path.join(self.root, "ims", "*.jp2"))
-        self.point_fps = glob.glob(os.path.join(self.root, "points", "*.geojson"))
+    def _load_tile(self, idx):
+        tif_path = self.tifs[idx]
+        tile_name = os.path.splitext(os.path.basename(tif_path))[0]
+        with rasterio.open(tif_path) as src:
+            data = src.read()
+            tile_transform = src.transform
+        im = data[:4]
+        valid = data[4]
+        pts_gdf = self.points_by_tile.get(tile_name)
+        if pts_gdf is not None and len(pts_gdf) > 0:
+            xs = pts_gdf.geometry.x.values
+            ys = pts_gdf.geometry.y.values
+            rows, cols = rasterio.transform.rowcol(tile_transform, xs, ys)
+            points = list(zip(rows, cols))
+        else:
+            points = []
+        return im, valid, points
 
     def __len__(self):
-        return len(self.point_fps)
+        return len(self.tifs)
 
     def __getitem__(self, idx):
-        point_fp = self.point_fps[idx]
-        im_fp = os.path.join(self.root, "ims", os.path.basename(point_fp).split("_scaled_int_")[0] + ".jp2")
-        chm_fp = os.path.join(self.root, "chm", os.path.basename(point_fp).split("_scaled_int_")[0] + "_scaled_int.tif")
+        if self.preloaded:
+            im, valid, points = self.data[idx]
+        else:
+            im, valid, points = self._load_tile(idx)
 
-        gdf = gpd.read_file(point_fp)
-        rectangle = gdf.geometry.iloc[-1]
-        points = gdf.geometry.iloc[:-1].to_frame()
+        augmented = self.crop(image=np.transpose(im, (1, 2, 0)),
+                              keypoints=np.array(points),
+                              mask=valid)
+        image = np.transpose(augmented['image'], (2, 0, 1))
+        points = augmented['keypoints']
+        valid = augmented["mask"]
+        image = self.transform(torch.from_numpy(image.astype(np.float32)))
+        image = torch.cat([image, torch.from_numpy(valid[None,].astype(np.float32))], dim=0)
+        cm = np.zeros((image.shape[1], image.shape[2]), dtype=np.float32)
+        points = np.array(
+            [[int(p[0]), int(p[1])] for p in points if 0 <= p[0] < image.shape[2] and 0 <= p[1] < image.shape[1]])
+        if len(points) > 0:
+            np.add.at(cm, (points[:, 0], points[:, 1]), 1.0)
+        return image, torch.from_numpy(valid)[None,], torch.from_numpy(cm[None, :, :])
 
-        with rasterio.open(im_fp) as src:
-            # convert rectangle to window
-            window = rasterio.windows.from_bounds(
-                *rectangle.bounds,
-                transform=src.transform
-            )
-            window_transform = src.window_transform(window)
-            im = src.read(
-                indexes=list(range(1, self.nbands + 1)),
-                window=window,
-                boundless=True,
-                fill_value=0
-            )
-            # project points to pixel coordinates
-            xs = points.geometry.x.values
-            ys = points.geometry.y.values
-            rows, cols = rasterio.transform.rowcol(window_transform, xs, ys)
+    def loader(self, batch_size, num_workers):
+        return torch.utils.data.DataLoader(self, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)
 
-        with rasterio.open(chm_fp) as src:
-            chm = src.read(
-                indexes=1,
-                window=window,
-                boundless=True,
-                fill_value=0
-            ) / 100.0  # scale heights
-
-        points = np.column_stack((rows, cols))
-        mask = (points[:, 1] >= 0) & (points[:, 1] < im.shape[2]) & (points[:, 0] >= 0) & (points[:, 0] < im.shape[1])
-        points = points[mask]
-        crop = self.random_crop(image=np.transpose(im, (1, 2, 0)), keypoints=points, chm=chm)
-        im = np.transpose(crop['image'], (2, 0, 1))
-        points = crop['keypoints']
-        cm = np.zeros((self.imsize, self.imsize), dtype=np.float32)
-        for coord in points:
-            row, col = int(coord[0]), int(coord[1])
-            cm[row, col] += 1.0
-
-        im = torch.from_numpy(im).float()
-        im = self.normalize(im)
-        valid = torch.ones(im.shape[1], im.shape[2])
-        im = torch.cat([im, torch.ones(1, im.shape[1], im.shape[2])], dim=0)  # add valid mask
-
-        chm = crop['chm']
-        # pseudo_density = self.chm_to_density(chm)
-        # return im, pseudo_density[None, :, :]
-        return im, valid[None,], torch.from_numpy(cm[None, :, :])
+    def preload(self):
+        self.data = []
+        for idx in range(len(self.tifs)):
+            self.data.append(self._load_tile(idx))
+        self.preloaded = True
 
     def loader(self, batch_size, num_workers):
         return DataLoader(self, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)

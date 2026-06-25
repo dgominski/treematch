@@ -100,24 +100,24 @@ def train(cfg):
     device = cfg.train.device
 
     # instantiate dataset
-    train_dataset = hydra.utils.instantiate(cfg.dataset, split="train")
+    train_dataset = hydra.utils.instantiate(cfg.dataset, split="train_strong")
     test_dataset = hydra.utils.instantiate(cfg.dataset, split="test")
 
-    if cfg.train.clean_ratio < 1.0:
-        train_dataset_noisy = hydra.utils.instantiate(cfg.dataset_noisy)
-        clean_batch_size = int(cfg.train.batch_size * cfg.train.clean_ratio)
-        noisy_batch_size = cfg.train.batch_size - clean_batch_size
-        noisy_loader = cycle(DataLoader(train_dataset_noisy, batch_size=noisy_batch_size, shuffle=True, num_workers=cfg.train.num_workers))
+    if cfg.train.strong_ratio < 1.0:
+        train_dataset_weak = hydra.utils.instantiate(cfg.dataset_weak)
+        strong_batch_size = int(cfg.train.batch_size * cfg.train.strong_ratio)
+        weak_batch_size = cfg.train.batch_size - strong_batch_size
+        weak_loader = cycle(DataLoader(train_dataset_weak, batch_size=weak_batch_size, shuffle=True, num_workers=cfg.train.num_workers))
     else:
-        clean_batch_size = cfg.train.batch_size
-        noisy_batch_size = 0
+        strong_batch_size = cfg.train.batch_size
+        weak_batch_size = 0
 
     if cfg.model.name in ["p2p", "centernet"]:
         # keep a small validation split for hparam tuning
         train_dataset, val_dataset = random_split(train_dataset, lengths=[0.9, 0.1])
-        val_loader = DataLoader(val_dataset, batch_size=clean_batch_size, shuffle=True, num_workers=cfg.train.num_workers, pin_memory=True)
+        val_loader = DataLoader(val_dataset, batch_size=strong_batch_size, shuffle=True, num_workers=cfg.train.num_workers, pin_memory=True)
 
-    train_loader = DataLoader(train_dataset, batch_size=clean_batch_size, shuffle=True, num_workers=cfg.train.num_workers, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=strong_batch_size, shuffle=True, num_workers=cfg.train.num_workers, pin_memory=True)
     test_loader = DataLoader(test_dataset, batch_size=cfg.train.batch_size, shuffle=False, num_workers=cfg.train.num_workers, pin_memory=True)
 
     # instantiate backbone
@@ -128,7 +128,7 @@ def train(cfg):
     trainer.setup(backbone)
 
     logger = wandb.init(
-        project="treedensity_rebuttal",
+        project="treematch",
         config=OmegaConf.to_container(cfg),
         reinit="create_new"
     )
@@ -144,12 +144,11 @@ def train(cfg):
     for epoch in range(cfg.train.nepoch):
         trainer.train()  # Set model to training mode
         for step, (inputs, valid, gt_discrete) in enumerate(train_loader):
-            if noisy_batch_size > 0:
-                inputs_noisy, valid_noisy, gt_discrete_noisy = next(noisy_loader)
-                # concatenate
-                inputs = torch.cat([inputs, inputs_noisy], dim=0)
-                valid = torch.cat([valid, valid_noisy], dim=0)
-                gt_discrete = torch.cat([gt_discrete, gt_discrete_noisy], dim=0)
+            if weak_batch_size > 0:
+                inputs_weak, valid_weak, gt_discrete_weak = next(weak_loader)
+                inputs = torch.cat([inputs, inputs_weak], dim=0)
+                valid = torch.cat([valid, valid_weak], dim=0)
+                gt_discrete = torch.cat([gt_discrete, gt_discrete_weak], dim=0)
             trainer.train_step(inputs, valid, gt_discrete, logger)
 
         if (epoch + 1) % cfg.train.val_freq == 0:

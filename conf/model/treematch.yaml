@@ -11,7 +11,7 @@ device: ${train.device}
 max_epoch: ${train.nepoch}
 val_epoch: ${train.val_freq}
 imsize: ${train.imsize}
-clean_ratio: ${train.clean_ratio}
-convert_density: False # whether to convert noisy supervision to a density proxy with epanechnikov kernels
-slack: True # whether to use slack for down weighting unreliable labels
+strong_ratio: ${train.strong_ratio}
+convert_density: False # whether to convert weak supervision to a density proxy with epanechnikov kernels
+slack: True # whether to use slack for down-weighting weak labels
 downscale_ratio: 1

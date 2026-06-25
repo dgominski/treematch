@@ -13,7 +13,7 @@ std = [250, 340, 415, 1170]
 
 class PlanetScopeStrong(torch.utils.data.Dataset):
     def __init__(self, imsize, split, root, preload=False, **kwargs):
-        assert split in ["train", "test"], "Invalid split"
+        assert split in ["train_strong", "test"], "Invalid split"
         self.split = split
         self.imsize = imsize
         self.split_dir = os.path.join(root, split)
@@ -31,7 +31,7 @@ class PlanetScopeStrong(torch.utils.data.Dataset):
         ])
         self.crop = A.Compose([
             A.PadIfNeeded(min_height=imsize, min_width=imsize, border_mode=0, fill=0),
-            A.RandomCrop(height=imsize, width=imsize) if split == "train" else A.CenterCrop(height=imsize, width=imsize)
+            A.RandomCrop(height=imsize, width=imsize) if split == "train_strong" else A.CenterCrop(height=imsize, width=imsize)
         ],
             keypoint_params=A.KeypointParams(format='yx', remove_invisible=True),
             seed=42

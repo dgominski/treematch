@@ -1,4 +1,4 @@
-_target_: data.spot.SPOTCountingDataset
+_target_: data.spot.SPOTStrong
 imsize: ${train.imsize}
 preload: True
 nbands: 4

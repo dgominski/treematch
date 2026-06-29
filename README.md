@@ -11,7 +11,7 @@
 [![Dataset](https://img.shields.io/badge/Dataset-Download-blue.svg?style=for-the-badge)](https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL)
 </div>
 
-This repository contains the code and data for the upcoming ECCV26 paper, [**Counting Trees from Satellite Imagery with Noisy Supervision**](https://arxiv.org/abs/2606.24786).
+This repository contains the code and data for the upcoming ECCV26 paper, [**Counting Trees from Satellite Imagery with Noisy Supervision**](https://arxiv.org/abs/2606.24786):
 
 - **TinyTrees** — a multi-sensor tree counting benchmark with point-level annotations across three geographic regions and satellite sensors.
 - **TreeMatch** — a training method for tree density estimation that leverages optimal transport to learn from both strong and weak annotations.
@@ -36,7 +36,7 @@ Each tile is a 5-band GeoTIFF (4 spectral bands + 1 binary validity mask). Point
 
 ### Download
 
-The dataset is hosted at: *[link TBA]*
+The dataset is hosted at: https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL. PlanetScope and Gaofen imagery are under the CC BY-NC 4.0 license: usage is reserved for <b>research and education only</b>.
 
 ```
 tinytrees/

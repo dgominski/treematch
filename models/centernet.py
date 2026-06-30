@@ -166,7 +166,7 @@ class Trainer(object):
         preds = {t: [] for t in threshs}
         targets = []
         with torch.no_grad():
-            for inp, tgt in loader:
+            for inp, valid, tgt in loader:
                 inp = inp.to(self.device)
                 valid = inp[:, [-1], :, :]
                 hm = self.backbone(inp)

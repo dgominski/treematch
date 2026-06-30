@@ -9,6 +9,7 @@
 [//]: # ([![license]&#40;https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray&#41;]&#40;#license&#41;)
 [![arXiv paper](https://img.shields.io/badge/paper-arxiv-b31b1b.svg?style=for-the-badge)](https://arxiv.org/abs/2606.24786)
 [![Dataset](https://img.shields.io/badge/Dataset-Download-blue.svg?style=for-the-badge)](https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL)
+[![Models](https://img.shields.io/badge/Models-🤗-yellow.svg?style=for-the-badge)](https://huggingface.co/datasets/dgominski/treematch)
 </div>
 
 This repository contains the code and data for the upcoming ECCV26 paper, [**Counting Trees from Satellite Imagery with Noisy Supervision**](https://arxiv.org/abs/2606.24786):
@@ -32,11 +33,23 @@ TinyTrees provides georeferenced satellite imagery with per-tree point annotatio
 
 Each tile is a 5-band GeoTIFF (4 spectral bands + 1 binary validity mask). Point annotations are stored in a single GeoPackage per split with a `tile` column linking each point to its image.
 
-**SPOT weak labels** are CHM-derived pseudolabels bundled in `spot/train_weak/`. The corresponding SPOT-6 imagery is not redistributed and must be obtained from the [Open-Canopy](https://github.com/fajwel/open-canopy) dataset (see `conf/local/local.yaml` for path configuration).
+**SPOT weak labels** are CHM-derived pseudolabels bundled in `spot/train_weak/`. The corresponding SPOT-6 imagery is not redistributed; to use it, download the [Open-Canopy](https://github.com/fajwel/open-canopy) dataset and point `spot_imagery_root` at its `canopy_height/` directory:
+
+```
+canopy_height/
+├── 2021/spot/compressed_pansharpened_*.tif
+├── 2022/spot/compressed_pansharpened_*.tif
+└── 2023/spot/compressed_pansharpened_*.tif
+```
+
+Add to `conf/local/local.yaml`:
+```yaml
+spot_imagery_root: /path/to/open-canopy/datasets/canopy_height
+```
 
 ### Download
 
-The dataset is hosted at: https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL. PlanetScope and Gaofen imagery are under the CC BY-NC 4.0 license: usage is reserved for <b>research and education only</b>.
+The dataset is hosted on [HuggingFace](https://huggingface.co/datasets/dgominski/tinytrees) and mirrored at https://sid.erda.dk/cgi-sid/ls.py?share_id=ET2ix678WL. PlanetScope and Gaofen imagery are under the CC BY-NC 4.0 license: usage is reserved for <b>research and education only</b>.
 
 ```
 tinytrees/
@@ -74,6 +87,25 @@ ds = SPOTStrong(imsize=64, split="train_strong", root="/path/to/tinytrees/spot")
 ## TreeMatch
 
 TreeMatch is an optimal-transport-based training method for tree density estimation that supports mixed supervision from strong (expert) and weak (e.g. CHM-derived) point annotations. It uses unbalanced optimal transport to match predicted density maps to point annotations, with a slack mechanism to down-weight weak labels.
+
+### Pretrained models
+
+Pretrained TreeMatch checkpoints for all three sensors are available on [HuggingFace](https://huggingface.co/dgominski/TinyTrees).
+
+```python
+from hub_model import UNetR50
+import torch
+
+model = UNetR50.from_pretrained("dgominski/TinyTrees", subfolder="ps")   # Rwanda / PlanetScope
+# model = UNetR50.from_pretrained("dgominski/TinyTrees", subfolder="gf")   # China / Gaofen-2
+# model = UNetR50.from_pretrained("dgominski/TinyTrees", subfolder="spot") # France / SPOT-6
+model.eval()
+
+# Input: (B, 5, H, W) — RGBI + 1 binary validity mask (last channel)
+x = torch.randn(1, 4, 128, 128)
+valid = torch.ones(1, 1, 128, 128)            # 1 = valid pixel, 0 = nodata
+density = model(torch.cat([x, valid], dim=1)) # (B, 1, H, W), trees/pixel
+```
 
 ### Training
 

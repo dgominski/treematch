@@ -1,20 +1,12 @@
 import glob
 import os
 import geopandas as gpd
-import pandas as pd
-from shapely.geometry import Point
 import rasterio
-from shapely.geometry import shape, Polygon, MultiPolygon, box
-from rasterio.features import shapes
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 import torchvision.transforms as T
 import albumentations as A
-import random
-from skimage.feature import peak_local_max
 from torch.utils.data import SubsetRandomSampler, Subset, DataLoader
-from scipy.ndimage import gaussian_filter
 
 
 mean = [73.2, 80.2, 72.7, 105.7]
@@ -162,9 +154,6 @@ class GaofenWeak(torch.utils.data.Dataset):
             np.add.at(cm, (points[:, 0], points[:, 1]), 1.0)
         return image, torch.from_numpy(valid)[None,], torch.from_numpy(cm[None, :, :])
 
-    def loader(self, batch_size, num_workers):
-        return torch.utils.data.DataLoader(self, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)
-
     def preload(self):
         self.data = []
         for idx in range(len(self.tifs)):
@@ -173,12 +162,5 @@ class GaofenWeak(torch.utils.data.Dataset):
 
     def loader(self, batch_size, num_workers):
         return DataLoader(self, batch_size=batch_size, shuffle=True, num_workers=num_workers, drop_last=True)
-
-    @staticmethod
-    def chm_to_density(chm, h_min=3.0, avg_trees_per_pixel=0.006):
-        mask = (chm > h_min)
-        dens = mask / (mask.sum() + 1e-6)
-        dens = dens * (avg_trees_per_pixel * chm.size)
-        return dens
 
 

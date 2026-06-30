@@ -61,7 +61,6 @@ class SPOTStrong(torch.utils.data.Dataset):
         points_gdf = gpd.read_file(os.path.join(self.split_dir, "points.gpkg"), engine="pyogrio")
         self.points_by_tile = {name: g for name, g in points_gdf.groupby("tile")}
 
-        band_stats = np.load("data/spot_band_stats.npz")
         self.crop = A.Compose([
             A.PadIfNeeded(min_height=imsize, min_width=imsize, border_mode=0, fill=0),
             A.CenterCrop(height=imsize, width=imsize),
@@ -70,7 +69,7 @@ class SPOTStrong(torch.utils.data.Dataset):
             seed=42
         )
         self.transform = T.Compose([
-            T.Normalize(mean=band_stats['mean'].tolist(), std=band_stats['std'].tolist())
+            T.Normalize(mean=mean, std=std)
         ])
 
         self.preloaded = False

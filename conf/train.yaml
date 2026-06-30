@@ -12,6 +12,6 @@ train:
   strong_ratio: 0.8
   nepoch: 500
   num_workers: 8
-  logdir: "/scratch/checkpoints/treedensity/"
+  logdir: "./checkpoints"
   imsize: 64
   val_freq: 10

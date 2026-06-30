@@ -1,0 +1,5 @@
+_target_: data.spot.SPOTWeak
+imsize: ${train.imsize}
+preload: False
+root: ""
+imagery_root: ${spot_imagery_root}

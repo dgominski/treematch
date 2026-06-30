@@ -1,0 +1,3 @@
+_target_: data.ps.PlanetScopeWeak
+imsize: ${train.imsize}
+preload: False

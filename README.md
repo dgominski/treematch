@@ -25,11 +25,11 @@ This repository contains the code and data for the upcoming ECCV26 paper, [**Cou
 
 TinyTrees provides georeferenced satellite imagery with per-tree point annotations across three regions, sensors, and resolutions:
 
-| Region | Sensor | GSD | Train (strong) | Train (weak) | Test | Total trees | Total area |
-|--------|--------|-----|----------------|--------------|------|-------------|------------|
-| Rwanda | PlanetScope | 3.0 m | 231 tiles / 309k trees | 73 tiles / 3.4M trees | 734 tiles / 237k trees | 3.9M | 283 km² |
-| China | Gaofen-2 | 0.8 m | 446 tiles / 55k trees | 16,364 tiles / 7.7M trees | 2,565 tiles / 70k trees | 7.8M | 2,344 km² |
-| France | SPOT-6 | 1.5 m | 492 tiles / 11k trees | CHM-derived (via [Open-Canopy](https://github.com/fajwel/open-canopy)) | 493 tiles / 11k trees | 22k | 0.7 km² |
+| Region | Sensor | GSD | Train (strong) | Train (weak) | Test                    | Total trees | Total area |
+|--------|--------|-----|----------------|--------------|-------------------------|-------------|------------|
+| Rwanda | PlanetScope | 3.0 m | 231 tiles / 309k trees | 73 tiles / 3.4M trees | 645 tiles / 237k trees  | 3.9M | 283 km² |
+| China | Gaofen-2 | 0.8 m | 446 tiles / 55k trees | 16,364 tiles / 7.7M trees | 2,189 tiles / 70k trees | 7.8M | 2,344 km² |
+| France | SPOT-6 | 1.5 m | 492 tiles / 11k trees | CHM-derived (via [Open-Canopy](https://github.com/fajwel/open-canopy)) | 493 tiles / 11k trees   | 22k | 0.7 km² |
 
 Each tile is a 5-band GeoTIFF (4 spectral bands + 1 binary validity mask). Point annotations are stored in a single GeoPackage per split with a `tile` column linking each point to its image.
 

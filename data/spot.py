@@ -125,22 +125,6 @@ class SPOTStrong(torch.utils.data.Dataset):
             self.data.append(self._load_tile(idx))
         self.preloaded = True
 
-    def to_disk(self):
-        self.plots = gpd.read_file("/data/Open-Canopy/datasets/count/plots.gpkg")
-        self.points = gpd.read_file("/data/Open-Canopy/datasets/count/points.gpkg")
-        self.points = self.points[self.points["geometry"].is_valid].reset_index(drop=True)
-        self.plots = gpd.read_file(f"/data/Open-Canopy/datasets/count/{self.split}_plots.gpkg")
-        out_dir = f"/data/Open-Canopy/datasets/count/pt/{self.split}/"
-        # save as .pt
-        for i in tqdm(range(len(self.plots)), desc="Saving dataset to disk"):
-            plot = self.plots.iloc[i]
-            plot_id = plot['plot_id']
-            spot_fp = f"/data/Open-Canopy/datasets/count/plots/plot_{plot_id}.tif"
-            points = self.points[self.points['plot_id'] == plot_id]
-            d = load_worker(spot_fp, plot.geometry, points)
-            out_fp = os.path.join(out_dir, f"plot_{plot_id}.pt")
-            torch.save(d, out_fp)
-
 
 class SPOTWeak(torch.utils.data.Dataset):
     def __init__(self, imsize, root, imagery_root, preload=False, **kwargs):
@@ -153,7 +137,6 @@ class SPOTWeak(torch.utils.data.Dataset):
         on_disk = set([os.path.basename(fp).split("cropped_")[1].split(".gpkg")[0] for fp in self.point_fps])
         self.geometries = self.geometries[self.geometries['crop_id'].astype(str).isin(on_disk)].reset_index(drop=True)
 
-        band_stats = np.load("data/spot_band_stats.npz")
         self.crop = A.Compose([
             A.PadIfNeeded(min_height=imsize, min_width=imsize, border_mode=0, fill=0),
             A.CenterCrop(height=imsize, width=imsize),
@@ -161,7 +144,7 @@ class SPOTWeak(torch.utils.data.Dataset):
             additional_targets={'valid': 'mask'}
         )
         self.transform = T.Compose([
-            T.Normalize(mean=band_stats['mean'].tolist(), std=band_stats['std'].tolist())
+            T.Normalize(mean=mean, std=std)
         ])
         self.preloaded = False
         self.nbands = 4

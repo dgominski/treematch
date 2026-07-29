@@ -70,15 +70,18 @@ class Trainer(object):
 
         #convert gt_discrete to points
         points = []
-        # densities = []
+        densities = []
         for b in range(gt_discrete.size(0)):
             inds = torch.nonzero(gt_discrete[b, 0, :, :], as_tuple=False)
-            # density = points_to_density(inds.cpu().numpy(), 64, 64, 2, device=self.device)
-            # densities.append(density)
+            if self.convert_density:
+                density = points_to_density(inds.cpu().numpy(), self.imsize, self.imsize, 2, device=self.device)
+                densities.append(density)
+            else:
+                densities.append(torch.zeros(self.imsize, self.imsize))
             points.append(inds.float())
         points = [p.to(self.device) for p in points]
+        densities = torch.cat(densities, dim=0).to(self.device)
         gt_discrete = gt_discrete.to(self.device)
-        # densities = torch.cat(densities, dim=0).to(self.device)
         N = inputs.size(0)
 
         strong_batch_size = int(N * self.strong_ratio)
@@ -108,7 +111,7 @@ class Trainer(object):
             if strong_batch_size < N:
                 outputs_weak = outputs[strong_batch_size:]
                 points_weak = points[strong_batch_size:]
-                density_weak = gt_discrete[strong_batch_size:]
+                density_weak = densities[strong_batch_size:]
                 if self.convert_density:
                     uot_loss = self.uot_loss.forward_density(outputs_weak, density_weak, slack=self.slack)
                 else:
